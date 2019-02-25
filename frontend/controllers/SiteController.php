@@ -1,6 +1,7 @@
 <?php
 namespace frontend\controllers;
 
+use yii\data\Pagination;
 use Yii;
 use yii\base\InvalidArgumentException;
 use yii\web\BadRequestHttpException;
@@ -8,10 +9,10 @@ use yii\web\Controller;
 use yii\filters\VerbFilter;
 use yii\filters\AccessControl;
 use common\models\LoginForm;
+use common\models\Tasks;
 use frontend\models\PasswordResetRequestForm;
 use frontend\models\ResetPasswordForm;
 use frontend\models\SignupForm;
-use frontend\models\ContactForm;
 
 /**
  * Site controller
@@ -72,7 +73,22 @@ class SiteController extends Controller
      */
     public function actionIndex()
     {
-        return $this->render('index');
+        $tasks = new Tasks();
+
+        //Если данные загружены и сохранены перезагружаем страницу
+        if ($tasks->load(Yii::$app->request->post())) {
+            if ($tasks->save()) {
+                    return $this->goHome();
+            }
+        }
+        
+        //Загружаем задачи пользователя за текущую дату
+        $viewTasks = $tasks->loadUserTasks(date('Y-m-d'));
+
+        return $this->render('index',[
+            'tasks' => $tasks,
+            'viewTasks' => $viewTasks,
+        ]);
     }
 
     /**
@@ -110,15 +126,6 @@ class SiteController extends Controller
         return $this->goHome();
     }
 
-    /**
-     * Displays about page.
-     *
-     * @return mixed
-     */
-    public function actionAbout()
-    {
-        return $this->render('about');
-    }
 
     /**
      * Signs user up.
